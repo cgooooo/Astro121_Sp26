@@ -40,7 +40,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def analyze_capture(filename):
-    # Load files with numpy.load [4]
+    # Load files
     loaded = np.load(filename)
     data = loaded['data']
     vs = loaded['sample_rate']
@@ -57,7 +57,7 @@ def analyze_capture(filename):
 
 # Load and Plot
 freqs, power = analyze_capture('trial_0.npz')
-plt.semilogy(freqs / 1e3, power) # Logarithmic axis to see spectral leakage [8]
+plt.semilogy(freqs / 1e3, power) # Logarithmic axis to see spectral leakage 
 plt.xlabel('Frequency (kHz)')
 plt.ylabel('Power (Arbitrary Units)')
 plt.title('Power Spectrum of Sine Wave')
