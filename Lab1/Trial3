@@ -1,0 +1,24 @@
+import ugradio
+import numpy as np
+
+# Defining the range of sample rates 
+sample_rates = [1.0e6, 1.5e6, 2.0e6, 2.5e6, 3.2e6]
+n_blocks = 2        # Number of data blocks to capture
+
+data_results = {}
+
+for fs in sample_rates:
+    print(f"Capturing data at {fs/1e6:.1f} MHz...")
+    
+    try:
+        sdr = ugradio.sdr.SDR(sample_rate=fs)
+        
+        # Capture data
+        data = sdr.capture_data(nblocks=n_blocks)
+        
+        data_results[fs] = data
+        
+        sdr.close()
+        
+
+print("Capture complete")
