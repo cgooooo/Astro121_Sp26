@@ -14,14 +14,14 @@ N = 18232
 
     
 #def capture_sine_wave(sample_rate, filename , use_custom_fir=False):
-sample_rate = 10000
-filename = "testing"
-sdr = ugradio.sdr.SDR(direct=True, sample_rate=rates)
+sample_rate = 3.0e6
+filename = f"testing_{sample_rate}Hz"
+sdr = ugradio.sdr.SDR(direct=True, sample_rate=sample_rate)
 
 
-if use_custom_fir:
-    fir_coeffs = np.array()
-    sdr.set_fir_coeffs(fir_coeffs)
+#if use_custom_fir:
+    #fir_coeffs = np.array()
+    #sdr.set_fir_coeffs(fir_coeffs)
 
 
 
