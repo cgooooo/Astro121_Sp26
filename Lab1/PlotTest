@@ -1,0 +1,32 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# The rates you used in your capture script
+rates = [1.0e6, 2.0e6, 3.2e6]
+
+for r in rates:
+    rate_hz = int(r)
+    filename = f"testng_{rate_hz}Hz.npz"
+    
+    try:
+        # Load the saved data
+        loaded = np.load(filename)
+        data = loaded['data']
+        fs = loaded['sample_rate']
+        
+        # Create a time axis in microseconds for easier reading
+        # t = index / sample_rate
+        nsamples = 100 # Only plot 100 samples to see the sine wave clearly
+        time_axis = np.arange(nsamples) / fs * 1e6 
+        
+        plt.figure(figsize=(10, 4))
+        plt.plot(time_axis, data[:nsamples], '.-')
+        
+        plt.title(f"SDR Time Series: {fs/1e6:.1f} MHz Sampling")
+        plt.xlabel("Time (μs)")
+        plt.ylabel("Voltage (ADC counts)")
+        plt.grid(True)
+        plt.show()
+        
+    except FileNotFoundError:
+        print(f"Could not find {filename}. Check the filename in your capture script.")
