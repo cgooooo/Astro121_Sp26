@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# The rates you used in your capture script
 rates = [1.0e6, 2.0e6, 3.2e6]
 
 for r in rates:
@@ -14,9 +13,8 @@ for r in rates:
         data = loaded['data']
         fs = loaded['sample_rate']
         
-        # Create a time axis in microseconds for easier reading
         # t = index / sample_rate
-        nsamples = 100 # Only plot 100 samples to see the sine wave clearly
+        nsamples = 100 
         time_axis = np.arange(nsamples) / fs * 1e6 
         
         plt.figure(figsize=(10, 4))
@@ -29,4 +27,4 @@ for r in rates:
         plt.show()
         
     except FileNotFoundError:
-        print(f"Could not find {filename}. Check the filename in your capture script.")
+        print(f"Could not find {filename}.")
