@@ -1,0 +1,136 @@
+### POWER SPECTRA CODE FOR THE OG BAD DATA
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+rates = [1.0e6, 1.25e6, 1.5e6, 2.0e6, 2.5e6, 2.75e6, 2.9e6, 3.0e6, 3.2e6]
+nsamples_show = 200
+spectrum_xlim_khz = 1200
+
+cmap = plt.cm.get_cmap("hsv", len(rates))
+
+# Time-domain overlay
+
+plt.figure(figsize=(10, 5))
+for i, r in enumerate(rates):
+    rate_hz = int(r)
+    filename = f"testing_{rate_hz}Hz.npz"
+    if not os.path.exists(filename):
+        print("Missing:", filename)
+        continue
+
+    loaded = np.load(filename)
+    data = loaded['data'].astype(float)
+    fs = float(loaded['sample_rate'])
+
+    Nshow = min(nsamples_show, len(data))
+    t_us = np.arange(Nshow) / fs * 1e6
+
+    plt.plot(
+        t_us, data[:Nshow], '.-',
+        color=cmap(i),
+        label=f"{fs/1e6:.2f} MHz",
+        markersize=3,
+        linewidth=1
+    )
+
+plt.xlabel("Time (µs)")
+plt.ylabel("ADC counts")
+plt.title(f"first {nsamples_show} samples")
+plt.grid(True)
+plt.legend(title="Sampling rate", bbox_to_anchor=(1.02, 1), loc='upper left')
+plt.tight_layout()
+plt.savefig("time_domain_overlay.png", dpi=200)
+plt.show()
+
+
+# =========================
+# Linear power spectrum overlay (shows leakage)
+# =========================
+plt.figure(figsize=(10, 5))
+
+for i, r in enumerate(rates):
+    rate_hz = int(r)
+    filename = f"testing_{rate_hz}Hz.npz"
+    if not os.path.exists(filename):
+        continue
+
+    loaded = np.load(filename, allow_pickle=True)
+    x = loaded['data'].astype(float)
+    fs = float(loaded['sample_rate'])
+
+    x = x - np.mean(x)
+    N = len(x)
+
+    X = np.fft.fft(x)
+    freqs = np.fft.fftfreq(N, d=1/fs)
+
+    P2 = np.abs(X)**2 / (N**2)
+
+    freqs_s = np.fft.fftshift(freqs)
+    P2_s = np.fft.fftshift(P2)
+
+    mask = np.abs(freqs_s) <= spectrum_xlim_khz * 1e3
+
+    plt.plot(
+        freqs_s[mask] / 1e3,
+        P2_s[mask],
+        color=cmap(i),
+        linewidth=1,
+        label=f"{fs/1e6:.2f} MHz"
+    )
+
+plt.xlabel("Frequency (kHz)")
+plt.ylabel("Power (counts², normalized)")
+plt.title(f"Centered power spectra (linear scale, leakage visible)")
+plt.grid(True)
+plt.legend(title="Sampling rate", bbox_to_anchor=(1.02, 1), loc='upper left')
+plt.tight_layout()
+plt.savefig("spectrum_overlay_linear.png", dpi=200)
+plt.show()
+
+
+plt.figure(figsize=(10, 5))
+eps = 1e-12  # avoid log(0)
+
+for i, r in enumerate(rates):
+    rate_hz = int(r)
+    filename = f"testing_{rate_hz}Hz.npz"
+    if not os.path.exists(filename):
+        continue
+
+    loaded = np.load(filename)
+    x = loaded['data'].astype(float)
+    fs = float(loaded['sample_rate'])
+
+    x = x - np.mean(x)
+    N = len(x)
+
+    X = np.fft.fft(x)
+    freqs = np.fft.fftfreq(N, d=1/fs)
+
+    P2 = np.abs(X)**2 / (N**2)
+
+    freqs_s = np.fft.fftshift(freqs)
+    P2_s = np.fft.fftshift(P2)
+
+    P_dB = 10 * np.log10(P2_s + eps)
+
+    mask = np.abs(freqs_s) <= spectrum_xlim_khz * 1e3
+
+    plt.plot(
+        freqs_s[mask] / 1e3,
+        P_dB[mask],
+        color=cmap(i),
+        linewidth=1,
+        label=f"{fs/1e6:.2f} MHz"
+    )
+
+plt.xlabel("Frequency (kHz)")
+plt.ylabel("Power (dB, relative)")
+plt.title(f"Centered power spectra (log scale)")
+plt.grid(True, which='both')
+plt.legend(title="Sampling rate", bbox_to_anchor=(1.02, 1), loc='upper left')
+plt.tight_layout()
+plt.savefig("spectrum_overlay_log.png", dpi=200)
+plt.show()
