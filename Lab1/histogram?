@@ -1,23 +1,19 @@
+#==========This is the code that gave us the HIDEOUS histogram========
 import numpy as np
 import matplotlib.pyplot as plt
 
-fn = "noise_3000000Hz_16blocks.npz"   # pick 2/4/8/16 blocks file
-d = np.load(fn, allow_pickle=True)
+fn = "noise_3000000Hz_1blocks.npz"
+d = np.load(fn)
 
-# Your files store blocks of samples
-                   # flatten into 1D sample list
-
-# Mean, RMS (std about the mean)
 mu = np.mean(x)
 sigma = np.std(x)                      # RMS about mean
 
-print("File:", fn)
 print("Mean (ADC counts):", mu)
 print("RMS sigma (ADC counts):", sigma)
 print("N samples:", x.size)
 
 # Histogram
-nbins = 80
+nbins = 100
 hist, edges = np.histogram(x, bins=nbins, density=True)
 centers = 0.5 * (edges[1:] + edges[:-1])
 
@@ -50,18 +46,17 @@ nbins = 80
 plt.figure(figsize=(8,5))
 
 for fn in files:
-    d = np.load(fn, allow_pickle=True)
+    d = np.load(fn)
 
     mu = np.mean(x)
     sigma = np.std(x)
 
     hist, edges = np.histogram(x, bins=nbins, density=True)
-    centers = 0.5*(edges[1:] + edges[:-1])
 
     plt.plot(centers, hist, linewidth=1, label=f"{fn.split('_')[-1].replace('.npz','')}")
 
-# Overlay Gaussian from the largest dataset (16 blocks) as reference
-d = np.load(files[-1], allow_pickle=True)
+# Using the 16 Block file to analyze
+d = np.load(files[-1])
 mu = np.mean(x)
 sigma = np.std(x)
 centers = np.linspace(mu - 5*sigma, mu + 5*sigma, 400)
