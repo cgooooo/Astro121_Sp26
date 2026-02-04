@@ -1,0 +1,78 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+fn = "noise_3000000Hz_16blocks.npz"   # pick 2/4/8/16 blocks file
+d = np.load(fn, allow_pickle=True)
+
+# Your files store blocks of samples
+                   # flatten into 1D sample list
+
+# Mean, RMS (std about the mean)
+mu = np.mean(x)
+sigma = np.std(x)                      # RMS about mean
+
+print("File:", fn)
+print("Mean (ADC counts):", mu)
+print("RMS sigma (ADC counts):", sigma)
+print("N samples:", x.size)
+
+# Histogram
+nbins = 80
+hist, edges = np.histogram(x, bins=nbins, density=True)
+centers = 0.5 * (edges[1:] + edges[:-1])
+
+# Theoretical Gaussian with same sigma (width = RMS)
+gauss = (1/(np.sqrt(2*np.pi)*sigma)) * np.exp(-0.5 * ((centers - mu)/sigma)**2)
+
+plt.figure(figsize=(7,4))
+plt.step(centers, hist, where="mid", label="Measured histogram")
+plt.plot(centers, gauss, linewidth=2, label=f"Gaussian (μ={mu:.2f}, σ={sigma:.2f})")
+plt.xlabel("ADC counts")
+plt.ylabel("Probability density")
+plt.title("Noise amplitude distribution with Gaussian overlay")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+#==============
+import numpy as np
+import matplotlib.pyplot as plt
+
+files = [
+    "noise_3000000Hz_2blocks.npz",
+    "noise_3000000Hz_4blocks.npz",
+    "noise_3000000Hz_8blocks.npz",
+    "noise_3000000Hz_16blocks.npz",
+]
+
+nbins = 80
+plt.figure(figsize=(8,5))
+
+for fn in files:
+    d = np.load(fn, allow_pickle=True)
+
+    mu = np.mean(x)
+    sigma = np.std(x)
+
+    hist, edges = np.histogram(x, bins=nbins, density=True)
+    centers = 0.5*(edges[1:] + edges[:-1])
+
+    plt.plot(centers, hist, linewidth=1, label=f"{fn.split('_')[-1].replace('.npz','')}")
+
+# Overlay Gaussian from the largest dataset (16 blocks) as reference
+d = np.load(files[-1], allow_pickle=True)
+mu = np.mean(x)
+sigma = np.std(x)
+centers = np.linspace(mu - 5*sigma, mu + 5*sigma, 400)
+gauss = (1/(np.sqrt(2*np.pi)*sigma)) * np.exp(-0.5*((centers-mu)/sigma)**2)
+plt.plot(centers, gauss, linewidth=2, label="Gaussian fit (16 blocks)")
+
+plt.xlabel("ADC counts")
+plt.ylabel("Probability density")
+plt.title("Noise histogram vs number of blocks")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
