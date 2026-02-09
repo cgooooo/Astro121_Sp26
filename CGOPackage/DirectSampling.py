@@ -19,11 +19,6 @@ filename = f"testing_{sample_rate}Hz"
 sdr = ugradio.sdr.SDR(direct=True, sample_rate=sample_rate)
 
 
-#if use_custom_fir:
-    #fir_coeffs = np.array()
-    #sdr.set_fir_coeffs(fir_coeffs)
-
-
 
 # Actual data capture
 data = sdr.capture_data(nblocks=2)[1]
