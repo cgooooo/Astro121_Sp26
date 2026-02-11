@@ -1,0 +1,52 @@
+import time
+import numpy as np
+from rtlsdr import RtlSdr
+
+# ---- settings ----
+HI = 1420.4058e6        # Hz
+fs = 2.4e6              # sample rate
+lo = HI - 0.4e6         # LO offset to avoid DC spike
+gain = 'auto'
+
+block_size = 262144
+nblocks = 200
+outfile = "hi_iq_data.npz"
+# ------------------
+
+sdr = RtlSdr()
+sdr.sample_rate = fs
+sdr.center_freq = lo
+sdr.gain = gain
+
+# warm-up read
+_ = sdr.read_samples(4096)
+
+iq_blocks = []
+t_start = time.time()
+
+for _ in range(nblocks):
+    iq = sdr.read_samples(block_size)
+    iq_blocks.append(np.asarray(iq, np.complex64))
+
+t_end = time.time()
+sdr.close()
+
+iq_all = np.concatenate(iq_blocks)
+
+# ---- save everything in ONE file ----
+np.savez(
+    outfile,
+    iq=iq_all,
+    center_freq_hz=lo,
+    sample_rate_hz=fs,
+    gain=gain,
+    block_size=block_size,
+    nblocks=nblocks,
+    unix_time_start=t_start,
+    unix_time_end=t_end,
+    duration_s=iq_all.size / fs
+)
+
+print("Saved", outfile)
+print("Samples:", iq_all.size)
+print("Duration (s):", iq_all.size / fs)
