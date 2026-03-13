@@ -1,0 +1,165 @@
+import time
+import numpy as np
+import ugradio
+import snap_spec
+
+# ===============================
+# USER SETTINGS
+# ===============================
+
+SOURCE = "sun"            # choose "sun" or "moon"
+OBS_SECONDS = 3600        # total observation time (seconds)
+POINT_EVERY = 10          # repoint telescope every N seconds
+SAVE_EVERY = 20           # save data every N spectra
+OUTFILE = "interf_observation.npz"
+
+# Observatory location (example: NCH site)
+LAT = ugradio.coord.nch.lat
+LON = ugradio.coord.nch.lon
+ALT = ugradio.coord.nch.alt
+
+
+# ===============================
+# HELPER FUNCTIONS
+# ===============================
+
+def get_source_radec(source, jd):
+    """Return RA and Dec of the Sun or Moon."""
+    if source.lower() == "sun":
+        ra, dec = ugradio.coord.sunpos(jd)
+    elif source.lower() == "moon":
+        ra, dec = ugradio.coord.moonpos(jd, LAT, LON, ALT)
+    else:
+        raise ValueError("Source must be 'sun' or 'moon'")
+    return ra, dec
+
+
+def get_source_altaz(source):
+    """Convert RA/Dec to Alt/Az."""
+    jd = ugradio.timing.julian_date()
+    ra, dec = get_source_radec(source, jd)
+    alt, az = ugradio.coord.get_altaz(ra, dec, jd, LAT, LON, ALT)
+    return jd, ra, dec, alt, az
+
+
+def point_telescope(ifm, source):
+    """Point telescope to the selected source."""
+    jd, ra, dec, alt, az = get_source_altaz(source)
+
+    print("\nPointing to", source.upper())
+    print("JD =", jd)
+    print("RA, Dec =", ra, dec)
+    print("Alt, Az =", alt, az)
+
+    ifm.point(alt, az)
+    return jd, ra, dec, alt, az
+
+
+def save_data(outfile, data):
+    """Save observation data."""
+    np.savez(
+        outfile,
+        jd=np.array(data["jd"]),
+        ra=np.array(data["ra"]),
+        dec=np.array(data["dec"]),
+        alt=np.array(data["alt"]),
+        az=np.array(data["az"]),
+        acc_cnt=np.array(data["acc_cnt"]),
+        real=np.array(data["real"]),
+        imag=np.array(data["imag"]),
+        unix_time=np.array(data["unix_time"])
+    )
+    print("Saved", len(data["acc_cnt"]), "integrations")
+
+
+# ===============================
+# MAIN OBSERVATION FUNCTION
+# ===============================
+
+def observe(source="sun", obs_seconds=3600):
+
+    # telescope interface
+    ifm = ugradio.interf.Interferometer()
+
+    # spectrometer interface
+    spec = snap_spec.snap.UGRadioSnap()
+    spec.initialize(mode="corr")
+
+    # data storage
+    data = {
+        "jd": [],
+        "ra": [],
+        "dec": [],
+        "alt": [],
+        "az": [],
+        "acc_cnt": [],
+        "real": [],
+        "imag": [],
+        "unix_time": []
+    }
+
+    start_time = time.time()
+    last_point = 0
+    prev_acc_cnt = None
+
+    print("Starting observation of", source)
+
+    # initial pointing
+    jd, ra, dec, alt, az = point_telescope(ifm, source)
+    last_point = time.time()
+
+    try:
+        while time.time() - start_time < obs_seconds:
+
+            now = time.time()
+
+            # repoint telescope periodically
+            if now - last_point >= POINT_EVERY:
+                jd, ra, dec, alt, az = point_telescope(ifm, source)
+                last_point = now
+            else:
+                jd, ra, dec, alt, az = get_source_altaz(source)
+
+            # read spectrometer data
+            d = spec.read_data(prev_acc_cnt)
+
+            acc_cnt = d["acc_cnt"]
+            corr = d["corr"]
+
+            prev_acc_cnt = acc_cnt
+
+            # store metadata
+            data["jd"].append(jd)
+            data["ra"].append(ra)
+            data["dec"].append(dec)
+            data["alt"].append(alt)
+            data["az"].append(az)
+            data["acc_cnt"].append(acc_cnt)
+            data["real"].append(np.real(corr))
+            data["imag"].append(np.imag(corr))
+            data["unix_time"].append(now)
+
+            print("Integration:", acc_cnt)
+
+            # periodic save
+            if len(data["acc_cnt"]) % SAVE_EVERY == 0:
+                save_data(OUTFILE, data)
+
+        # final save
+        save_data(OUTFILE, data)
+
+    except KeyboardInterrupt:
+        print("Stopped by user. Saving data...")
+        save_data(OUTFILE, data)
+
+    finally:
+        print("Stowing telescope")
+        ifm.stow()
+
+
+# ===============================
+# RUN SCRIPT
+# ===============================
+
+if __name__ == "__main__":
+    observe(source=SOURCE, obs_seconds=OBS_SECONDS)
