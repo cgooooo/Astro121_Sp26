@@ -2,35 +2,32 @@ import time
 import datetime
 import ugradio
 
-# ----------------------------
-# Location information
-# ----------------------------
-
 lat = ugradio.coord.nch.lat
 lon = ugradio.coord.nch.lon
 alt = ugradio.coord.nch.alt
 
-# ----------------------------
-# Time information
-# ----------------------------
-
-# Unix time (seconds since Jan 1 1970 UTC)
 unix_time = time.time()
 
-# UTC datetime
 utc_datetime = datetime.datetime.utcnow()
 
-# Local datetime
 local_datetime = datetime.datetime.now()
 
-# Julian Date
 jd = ugradio.timing.julian_date()
 
-# ----------------------------
-# Print metadata
-# ----------------------------
 
-print("===== OBSERVATION METADATA =====")
+# Sun position
+
+ra_sun, dec_sun = ugradio.coord.sunpos(jd)
+alt_sun, az_sun = ugradio.coord.get_altaz(ra_sun, dec_sun, jd, lat, lon, alt)
+
+# Moon position
+
+ra_moon, dec_moon = ugradio.coord.moonpos(jd, lat, lon, alt)
+alt_moon, az_moon = ugradio.coord.get_altaz(ra_moon, dec_moon, jd, lat, lon, alt)
+
+# metadata
+
+print("OBSERVATION METADATA")
 print()
 
 print("Unix Time:")
@@ -55,15 +52,16 @@ print("Longitude:", lon)
 print("Altitude (m):", alt)
 print()
 
-# Optional: Sun coordinates (useful sanity check)
-ra_sun, dec_sun = ugradio.coord.sunpos(jd)
-alt_sun, az_sun = ugradio.coord.get_altaz(ra_sun, dec_sun, jd, lat, lon, alt)
-
-print("Sun Position:")
+print("----- Sun Position -----")
 print("RA:", ra_sun)
 print("Dec:", dec_sun)
 print("Alt:", alt_sun)
 print("Az:", az_sun)
-
 print()
-print("================================")
+
+print("----- Moon Position -----")
+print("RA:", ra_moon)
+print("Dec:", dec_moon)
+print("Alt:", alt_moon)
+print("Az:", az_moon)
+print()
